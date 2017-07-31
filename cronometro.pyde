@@ -1,23 +1,18 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-
-
-
 from socket import *
 import threading
 import time
 
 
-serverName = ''   # < serverName                                -   ip do servidor (em branco)
-serverPort = 23035 # < serverPort                               -   porta a se conectar
-serverSocket = socket(AF_INET, SOCK_STREAM)   # < serverSocket  -   criacao do socket TCP
+serverName = ''   # < ip do servidor (em branco)
+serverPort = 23065# < porta a se conectar
+serverSocket = socket(AF_INET, SOCK_STREAM)   # < criacao do socket TCP
 serverSocket.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)  # < Faz o reuso da porta e do endereco
 serverSocket.bind((serverName, serverPort))   # < bind do ip do servidor com a porta
 serverSocket.listen(1)  # < socket pronto para "ouvir" conexoes
-connectionSocket, addr = serverSocket.accept() # < connectionSocket   -    guarda a conexao e o endereco do cliente conec
+connectionSocket, addr = serverSocket.accept() # < guarda a conexao e o endereco do cliente conec
 
 
-##	@file 		cronometro.py
+##	@file 		cronometro.pyde
 #	@brief 		Responsavel por criar e manipular a threa de recebimento de mensagem do cliente via socket
 #	@details 	Apresentar pontuacao e detalhes do jogo ao decorrer da partida
 #	@since		1/07/2017
@@ -42,51 +37,81 @@ class minhaThread(threading.Thread):
     ## 	@brief Executar a funcao inicializada na classe minhaThread
     #	@details Executa a funcao inicializada na classe minhaThread
     def run(self):
-        if (self.funcao == "cronometro"):
-            print("Executando o cronometro")
-            cronometro()
 
-        elif(self.funcao == "recv_msg"):
+        if(self.funcao == "recv_msg"):
             print("Executando o recv_msg")
             recv_msg()
 
 
 
 #cronometro
-initialTime = millis() # < @initialTime  -   marca o inicio da contagem do tempo para ser utilizada no cronometro
-minuto = 0 # < #< Documented global var \c minuto\
-hora = 0  # < hora                      -   marca as horas no cronometro
-segundo = 0 # < segundo                 -   marca os segundos no cronometro
-# flag = True
+initialTime = millis() # < marca o inicio da contagem do tempo para ser utilizada no cronometro
+minuto = 0 # < marca os minutos no cronometro
+hora = 0  # < marca as horas no cronometro
+segundo = 0 # < marca os segundos no cronometro
+flag = True
 
 #pontos dos times
-ponto_time1 = 0 # <  ponto_time1    -   pontos do time1 em cada set
-ponto_time2 = 0 # < ponto_time2     -   pontos do time2 em cada set
-time2 = [0, 0, 0, 0, 0] # < time2   -   armazena os pontos do time 1 de todos os sets
-time1 = [0, 0, 0, 0, 0] # < time1   -   armazena os pontos do time 2 de todos os sets
+ponto_time1 = 23 # < pontos do time1 em cada set
+ponto_time2 = 23 # < pontos do time2 em cada set
+time2 = [0, 0, 0, 0, 0] # < armazena os pontos do time 1 de todos os sets
+time1 = [0, 0, 0, 0, 0] # < armazena os pontos do time 2 de todos os sets
+nome_time1 = ''
+nome_time2 = ''
 
-posse_bola = True # < posse_bola    -   identifica de quem é a vez na posse de bola
+posse_bola = True # < identifica de quem é a vez na posse de bola
 
+statistica = False
+
+ponto_estatistica1 = [0, 0, 0, 0]
+ponto_estatistica2 = [0, 0, 0, 0]
 
 ## 	@brief Função recv_msg()
 #   @details Recebe os valores via socket do cliente
 #   @param msg      - caracter da mensagem a ser convertido
 #   @return result  - retorna uma lista de inteiro que representa o valor binário do caracter
 def recv_msg():
-    global connectionSocket, addr, ponto_time1, ponto_time2, posse_bola, time1, time2
-    game_set = 0 # < game_set   -   indentifica em qual set o jogo se encontra
+    global ponto_estatistica2, ponto_estatistica1, statistica, connectionSocket, addr, ponto_time1, ponto_time2, posse_bola, time1, time2, nome_time1, nome_time2
+    game_set = 0 # < indentifica em qual set o jogo se encontra
     while 1:
-        msg = connectionSocket.recv(1024)#  < msg   -   Recebe uma mensagem pelo socket aberto, recebe até BY bytes
+        msg = connectionSocket.recv(1024)#  < Recebe uma mensagem pelo socket aberto, recebe até BY bytes
         if (msg != None):
             print "Mensagem recebida: %s" % (msg)
             msg = str(msg).split(',')
+            
+            if(msg[0] == 'nome do time 1'):
+                nome_time1 = str(msg[1])
+                
+            if(msg[0] == 'nome do time 2'):
+                nome_time2 = str(msg[1])
+                    
             if(msg[0] == 'inicio'):
+                statistica = False
                 loop()
+                
             if (msg[0] == 'time1'):
+                if(msg[1] == '1'):
+                    ponto_estatistica1[int(msg[1]) - 1] +=1
+                elif(msg[1] == '2'):
+                    ponto_estatistica1[int(msg[1]) - 1] +=1
+                elif(msg[1] == '3'):
+                    ponto_estatistica1[int(msg[1]) - 1] +=1
+                elif(msg[1] == '4'):
+                    ponto_estatistica1[int(msg[1]) - 1] +=1                            
+                    
                 ponto_time1+=1
                 placar()
                 posse_bola = True
+                
             elif (msg[0] == 'time2'):
+                if(msg[1] == '1'):
+                    ponto_estatistica2[int(msg[1]) - 1] +=1
+                elif(msg[1] == '2'):
+                    ponto_estatistica2[int(msg[1]) - 1] +=1
+                elif(msg[1] == '3'):
+                    ponto_estatistica2[int(msg[1]) - 1] +=1
+                elif(msg[1] == '4'):
+                    ponto_estatistica2[int(msg[1]) - 1] +=1
                 ponto_time2 +=1
                 placar()
                 posse_bola = False
@@ -96,10 +121,13 @@ def recv_msg():
                 time1[game_set] = ponto_time1
                 time2[game_set] = ponto_time2
                 game_set += 1
-                ponto_time1 = 0
-                ponto_time2 = 0
+                ponto_time1 = 22
+                ponto_time2 = 20
+                statistica = True
                 time.sleep(1)
+                print(ponto_estatistica1)
                 noLoop()
+
             elif (ponto_time2 - ponto_time1 > 1):
                 print('time 2 ganhou')
                 time2[game_set] = ponto_time2
@@ -107,7 +135,8 @@ def recv_msg():
                 game_set += 1
                 ponto_time1 = 0
                 ponto_time2 = 0
-                time.sleep(1)
+                statistica = True
+                time.sleep(1)            
                 noLoop()
 
 
@@ -120,23 +149,23 @@ def setup():
     frameRate(30)
 
     # a = minhaThread(1, "cronometro", "cronometro")
-    receber_msg = minhaThread(2, "recv_msg", "recv_msg") # < receber_msg    -   iniciando uma instancia da classe minhaThread
+    receber_msg = minhaThread(2, "recv_msg", "recv_msg") # < iniciando uma instancia da classe minhaThread
     # # # a.start()
     receber_msg.start()
 
 ## 	@brief Função cronometro()
 #   @details Responsável por desenhar e controlar o cronometro
 def cronometro():
-    global controle, minuto, hora, segundo, initialTime
+    global controle, minuto, hora, segundo, initialTime, nome_time1, nome_time2
 
     #desenha a linha de centro do placar com 3 pixels de largura
-    strokeWeight(3)
+    strokeWeight(5)
     line(width/2, height/25, width/2, height/1.3)
     textFont(createFont("Georgia", 80))
     textAlign(LEFT, DOWN)
-    text('Time 1', width/25, height/8)
+    text(nome_time1, width/25, height/8)
     textAlign(LEFT, DOWN )
-    text('Time 2', width/1.35, height/8)
+    text(nome_time2, width/1.35, height/8)
 
     #verifica a passagem de cada segundo
     if (millis() - initialTime > 1000):
@@ -180,9 +209,9 @@ def placar():
     p1 = '%s' % ('{:02.0f}'.format(ponto_time1)) # < ponto do time1
     p2 = '%s' % ('{:02.0f}'.format(ponto_time2)) # < ponto do time2
     textAlign(RIGHT, DOWN)
-    text(p1, (width / 2), (height / 2 + 100))
+    text(p1, (width / 2), (height / 1.6))
     textAlign(LEFT, DOWN)
-    text(p2, (width / 2 ), (height / 2 + 100))
+    text(p2, (width / 2 ), (height / 1.6))
 
 ## 	@brief Função pontuacao()
 #   @details Exibe a pontuacao dos sets jogados
@@ -194,9 +223,28 @@ def pontuacao():
     text( '%s | %s' % ( str(time1[0] ), str(time2[0]) ), (width / 6.5), (height / 1.08))
     text( '%s | %s' % ( str(time1[1] ), str(time2[1]) ), (width / 3.6), (height / 1.08))
     text( '%s | %s' % ( str(time1[2] ), str(time2[2]) ), (width / 2.5), (height / 1.08))
-    text( '%s | %s' % ( str(time1[2] ), str(time2[2]) ), (width / 1.9), (height / 1.08))
-    text( '%s | %s' % ( str(time1[2] ), str(time2[2]) ), (width / 1.55), (height / 1.08))
+    text( '%s | %s' % ( str(time1[3] ), str(time2[3]) ), (width / 1.9), (height / 1.08))
+    text( '%s | %s' % ( str(time1[4] ), str(time2[4]) ), (width / 1.55), (height / 1.08))
 
+
+def statisticas():
+    global ponto_estatistica1, ponto_estatistica2
+    textFont(createFont("Georgia", 40))
+    pontuacao()
+    textAlign(LEFT, DOWN)
+    text('Ataque -> %s' % (ponto_estatistica1[0]),width/4, height/5 )
+    text('Bloqueio -> %s' % (ponto_estatistica1[1]),width/4, height/3.5 )
+    text('Erro -> %s' % (ponto_estatistica1[2]),width/4, height/2.7 )
+    text('Saque -> %s' % (ponto_estatistica1[3]),width/4, height/2.2 )
+    
+    textAlign(RIGHT, DOWN)
+    text('Ataque -> %s' % (ponto_estatistica2[0]),width/1.3, height/5 )
+    text('Bloqueio -> %s' % (ponto_estatistica2[1]),width/1.3, height/3.5 )
+    text('Erro -> %s' % (ponto_estatistica2[2]),width/1.3, height/2.7 )
+    text('Saque -> %s' % (ponto_estatistica2[3]),width/1.3, height/2.2 )
+
+    
+    
 
 
 # def mousePressed():
@@ -208,9 +256,22 @@ def pontuacao():
 ## 	@brief Função draw()
 #   @details Funcao responsavel por desenhar a tela
 def draw():
-    global posse_bola
-    background(100)
-    posseBola(posse_bola)
-    pontuacao()
-    cronometro()
-    placar()
+    global statistica, nome_time1, nome_time2
+    if(statistica):
+        background(100)
+        statisticas()
+        strokeWeight(5)
+        line(width/2, height/25, width/2, height/1.3)
+        textFont(createFont("Georgia", 80))
+        textAlign(LEFT, DOWN)
+        text(nome_time1, width/25, height/8)
+        textAlign(LEFT, DOWN )
+        text(nome_time2, width/1.35, height/8)
+        
+    else:
+        global posse_bola
+        background(100)
+        posseBola(posse_bola)
+        pontuacao()
+        cronometro()
+        placar()
